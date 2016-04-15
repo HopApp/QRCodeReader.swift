@@ -30,16 +30,11 @@ import AVFoundation
 /// Convenient controller to display a view to scan/read 1D or 2D bar codes like the QRCodes. It is based on the `AVFoundation` framework from Apple. It aims to replace ZXing or ZBar for iOS 7 and over.
 public class QRCodeReaderViewController: UIViewController {
   private var cameraView = ReaderOverlayView()
-  private var cancelButton = UIButton()
-  private var switchCameraButton: SwitchCameraButton?
-  private var toggleTorchButton: ToggleTorchButton?
 
   /// The code reader object used to scan the bar code.
   public let codeReader: QRCodeReader
 
   let startScanningAtLoad: Bool
-  let showSwitchCameraButton: Bool
-  let showTorchButton: Bool
 
   // MARK: - Managing the Callback Responders
 
@@ -105,13 +100,11 @@ public class QRCodeReaderViewController: UIViewController {
    - parameter showSwitchCameraButton: Flag to display the switch camera button.
    - parameter showTorchButton: Flag to display the toggle torch button. If the value is true and there is no torch the button will not be displayed.
    */
-  public convenience init(cancelButtonTitle: String, codeReader reader: QRCodeReader, startScanningAtLoad startScan: Bool = true, showSwitchCameraButton showSwitch: Bool = true, showTorchButton showTorch: Bool = false) {
+  public convenience init(cancelButtonTitle: String, codeReader reader: QRCodeReader, startScanningAtLoad startScan: Bool = true) {
     self.init(builder: QRCodeViewControllerBuilder { builder in
       builder.cancelButtonTitle      = cancelButtonTitle
       builder.reader                 = reader
       builder.startScanningAtLoad    = startScan
-      builder.showSwitchCameraButton = showSwitch
-      builder.showTorchButton        = showTorch
       })
   }
 
@@ -123,8 +116,6 @@ public class QRCodeReaderViewController: UIViewController {
   required public init(builder: QRCodeViewControllerBuilder) {
     startScanningAtLoad    = builder.startScanningAtLoad
     codeReader             = builder.reader
-    showSwitchCameraButton = builder.showSwitchCameraButton
-    showTorchButton        = builder.showTorchButton
 
     super.init(nibName: nil, bundle: nil)
 
@@ -148,8 +139,6 @@ public class QRCodeReaderViewController: UIViewController {
   required public init?(coder aDecoder: NSCoder) {
     codeReader             = QRCodeReader(metadataObjectTypes: [])
     startScanningAtLoad    = false
-    showTorchButton        = false
-    showSwitchCameraButton = false
 
     super.init(coder: aDecoder)
   }
@@ -201,50 +190,14 @@ public class QRCodeReaderViewController: UIViewController {
       codeReader.previewLayer.connection.videoOrientation = QRCodeReader.videoOrientationFromDeviceOrientation(orientation, withSupportedOrientations: supportedInterfaceOrientations())
     }
 
-    if showSwitchCameraButton && codeReader.hasFrontDevice() {
-      let newSwitchCameraButton = SwitchCameraButton()
-      newSwitchCameraButton.translatesAutoresizingMaskIntoConstraints = false
-      newSwitchCameraButton.addTarget(self, action: #selector(switchCameraAction), forControlEvents: .TouchUpInside)
-      view.addSubview(newSwitchCameraButton)
-
-      switchCameraButton = newSwitchCameraButton
-    }
-
-    if showTorchButton && codeReader.isTorchAvailable() {
-      let newToggleTorchButton = ToggleTorchButton()
-      newToggleTorchButton.translatesAutoresizingMaskIntoConstraints = false
-      newToggleTorchButton.addTarget(self, action: #selector(toggleTorchAction), forControlEvents: .TouchUpInside)
-      view.addSubview(newToggleTorchButton)
-      toggleTorchButton = newToggleTorchButton
-    }
-
-    cancelButton.translatesAutoresizingMaskIntoConstraints = false
-    cancelButton.setTitle(cancelButtonTitle, forState: .Normal)
-    cancelButton.setTitleColor(.grayColor(), forState: .Highlighted)
-    cancelButton.addTarget(self, action: #selector(cancelAction), forControlEvents: .TouchUpInside)
-    view.addSubview(cancelButton)
   }
 
   private func setupAutoLayoutConstraints() {
-    let views = ["cameraView": cameraView, "cancelButton": cancelButton]
+    let views = ["cameraView": cameraView]
 
-    view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[cameraView][cancelButton(40)]|", options: [], metrics: nil, views: views))
+    view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[cameraView]|", options: [], metrics: nil, views: views))
     view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[cameraView]|", options: [], metrics: nil, views: views))
-    view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-[cancelButton]-|", options: [], metrics: nil, views: views))
 
-    if let _switchCameraButton = switchCameraButton {
-      let switchViews: [String: AnyObject] = ["switchCameraButton": _switchCameraButton, "topGuide": topLayoutGuide]
-
-      view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:[topGuide]-[switchCameraButton(50)]", options: [], metrics: nil, views: switchViews))
-      view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:[switchCameraButton(70)]|", options: [], metrics: nil, views: switchViews))
-    }
-
-    if let _toggleTorchButton = toggleTorchButton {
-      let toggleViews: [String: AnyObject] = ["toggleTorchButton": _toggleTorchButton, "topGuide": topLayoutGuide]
-
-      view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:[topGuide]-[toggleTorchButton(50)]", options: [], metrics: nil, views: toggleViews))
-      view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[toggleTorchButton(70)]", options: [], metrics: nil, views: toggleViews))
-    }
   }
 
   // MARK: - Controlling the Reader
