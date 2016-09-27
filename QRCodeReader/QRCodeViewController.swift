@@ -28,26 +28,26 @@ import UIKit
 import AVFoundation
 
 /// Convenient controller to display a view to scan/read 1D or 2D bar codes like the QRCodes. It is based on the `AVFoundation` framework from Apple. It aims to replace ZXing or ZBar for iOS 7 and over.
-public class QRCodeReaderViewController: UIViewController {
-  private var cameraView = ReaderOverlayView()
+open class QRCodeReaderViewController: UIViewController {
+  fileprivate var cameraView = ReaderOverlayView()
 
   /// The code reader object used to scan the bar code.
-  public let codeReader: QRCodeReader
+  open let codeReader: QRCodeReader
 
   let startScanningAtLoad: Bool
 
   // MARK: - Managing the Callback Responders
 
   /// The receiver's delegate that will be called when a result is found.
-  public weak var delegate: QRCodeReaderViewControllerDelegate?
+  open weak var delegate: QRCodeReaderViewControllerDelegate?
 
   /// The completion blocak that will be called when a result is found.
-  public var completionBlock: (QRCodeReaderResult? -> Void)?
+  open var completionBlock: ((QRCodeReaderResult?) -> Void)?
 
   deinit {
     codeReader.stopScanning()
 
-    NSNotificationCenter.defaultCenter().removeObserver(self)
+    NotificationCenter.default.removeObserver(self)
   }
 
   // MARK: - Creating the View Controller
@@ -119,7 +119,7 @@ public class QRCodeReaderViewController: UIViewController {
 
     super.init(nibName: nil, bundle: nil)
 
-    view.backgroundColor = .blackColor()
+    view.backgroundColor = UIColor.black
 
     codeReader.didFindCodeBlock = { [weak self] resultAsObject in
       if let weakSelf = self {
@@ -131,9 +131,9 @@ public class QRCodeReaderViewController: UIViewController {
     setupUIComponentsWithCancelButtonTitle(builder.cancelButtonTitle)
     setupAutoLayoutConstraints()
 
-    cameraView.layer.insertSublayer(codeReader.previewLayer, atIndex: 0)
+    cameraView.layer.insertSublayer(codeReader.previewLayer, at: 0)
 
-    NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(orientationDidChanged), name: UIDeviceOrientationDidChangeNotification, object: nil)
+    NotificationCenter.default.addObserver(self, selector: #selector(orientationDidChanged), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
   }
 
   required public init?(coder aDecoder: NSCoder) {
@@ -145,7 +145,7 @@ public class QRCodeReaderViewController: UIViewController {
 
   // MARK: - Responding to View Events
 
-  override public func viewWillAppear(animated: Bool) {
+  override open func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
 
     if startScanningAtLoad {
@@ -153,13 +153,13 @@ public class QRCodeReaderViewController: UIViewController {
     }
   }
 
-  override public func viewWillDisappear(animated: Bool) {
+  override open func viewWillDisappear(_ animated: Bool) {
     stopScanning()
 
     super.viewWillDisappear(animated)
   }
 
-  override public func viewWillLayoutSubviews() {
+  override open func viewWillLayoutSubviews() {
     super.viewWillLayoutSubviews()
 
     codeReader.previewLayer.frame = view.bounds
@@ -167,54 +167,54 @@ public class QRCodeReaderViewController: UIViewController {
 
   // MARK: - Managing the Orientation
 
-  func orientationDidChanged(notification: NSNotification) {
+  func orientationDidChanged(_ notification: Notification) {
     cameraView.setNeedsDisplay()
 
-    if let device = notification.object as? UIDevice where codeReader.previewLayer.connection.supportsVideoOrientation {
-      codeReader.previewLayer.connection.videoOrientation = QRCodeReader.videoOrientationFromDeviceOrientation(device.orientation, withSupportedOrientations: supportedInterfaceOrientations(), fallbackOrientation: codeReader.previewLayer.connection.videoOrientation)
+    if let device = notification.object as? UIDevice , codeReader.previewLayer.connection.isVideoOrientationSupported {
+      codeReader.previewLayer.connection.videoOrientation = QRCodeReader.videoOrientationFromDeviceOrientation(device.orientation, withSupportedOrientations: supportedInterfaceOrientations, fallbackOrientation: codeReader.previewLayer.connection.videoOrientation)
     }
   }
 
   // MARK: - Initializing the AV Components
 
-  private func setupUIComponentsWithCancelButtonTitle(cancelButtonTitle: String) {
+  fileprivate func setupUIComponentsWithCancelButtonTitle(_ cancelButtonTitle: String) {
     cameraView.clipsToBounds = true
     cameraView.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(cameraView)
 
-    codeReader.previewLayer.frame = CGRectMake(0, 0, view.frame.size.width, view.frame.size.height)
+    codeReader.previewLayer.frame = CGRect(x: 0, y: 0, width: view.frame.size.width, height: view.frame.size.height)
 
-    if codeReader.previewLayer.connection.supportsVideoOrientation {
-      let orientation = UIDevice.currentDevice().orientation
+    if codeReader.previewLayer.connection.isVideoOrientationSupported {
+      let orientation = UIDevice.current.orientation
 
-      codeReader.previewLayer.connection.videoOrientation = QRCodeReader.videoOrientationFromDeviceOrientation(orientation, withSupportedOrientations: supportedInterfaceOrientations())
+      codeReader.previewLayer.connection.videoOrientation = QRCodeReader.videoOrientationFromDeviceOrientation(orientation, withSupportedOrientations: supportedInterfaceOrientations)
     }
 
   }
 
-  private func setupAutoLayoutConstraints() {
+  fileprivate func setupAutoLayoutConstraints() {
     let views = ["cameraView": cameraView]
 
-    view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[cameraView]|", options: [], metrics: nil, views: views))
-    view.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[cameraView]|", options: [], metrics: nil, views: views))
+    view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|[cameraView]|", options: [], metrics: nil, views: views))
+    view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|[cameraView]|", options: [], metrics: nil, views: views))
 
   }
 
   // MARK: - Controlling the Reader
 
   /// Starts scanning the codes.
-  public func startScanning() {
+  open func startScanning() {
     codeReader.startScanning()
   }
 
   /// Stops scanning the codes.
-  public func stopScanning() {
+  open func stopScanning() {
     codeReader.stopScanning()
   }
 
   // MARK: - Catching Button Events
 
-  func cancelAction(button: UIButton) {
+  func cancelAction(_ button: UIButton) {
     codeReader.stopScanning()
 
     if let _completionBlock = completionBlock {
@@ -224,11 +224,11 @@ public class QRCodeReaderViewController: UIViewController {
     delegate?.readerDidCancel(self)
   }
 
-  func switchCameraAction(button: SwitchCameraButton) {
+  func switchCameraAction(_ button: SwitchCameraButton) {
     codeReader.switchDeviceInput()
   }
 
-  func toggleTorchAction(button: ToggleTorchButton) {
+  func toggleTorchAction(_ button: ToggleTorchButton) {
     codeReader.toggleTorch()
   }
 }
@@ -243,12 +243,12 @@ public protocol QRCodeReaderViewControllerDelegate: class {
    - parameter reader: A code reader object informing the delegate about the scan result.
    - parameter result: The result of the scan
    */
-  func reader(reader: QRCodeReaderViewController, didScanResult result: QRCodeReaderResult)
+  func reader(_ reader: QRCodeReaderViewController, didScanResult result: QRCodeReaderResult)
   
   /**
    Tells the delegate that the user wants to stop scanning codes.
    
    - parameter reader: A code reader object informing the delegate about the cancellation.
    */
-  func readerDidCancel(reader: QRCodeReaderViewController)
+  func readerDidCancel(_ reader: QRCodeReaderViewController)
 }
